@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orden de Compra</title>
+</head>
+<body>
+    <h1>Orden de Compra</h1>
+    <p>Orden ID: {{ orden.id }}</p>
+    <p>Fecha: {{ orden.fecha_compra }}</p>
+    <p>Total: {{ orden.total }}</p>
+    <h2>Dirección de Envío</h2>
+    <p>{{ orden.direccion_envio.direccion }}</p>
+    <p>{{ orden.direccion_envio.ciudad }}</p>
+    <p>{{ orden.direccion_envio.codigo_postal }}</p>
+    <p>{{ orden.direccion_envio.pais }}</p>
+    <h2>Detalles de la Orden</h2>
+    <ul>
+        {% for detalle in orden.detalleorden_set.all %}
+            <li>{{ detalle.producto.nombre }} - {{ detalle.cantidad }} x {{ detalle.precio }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

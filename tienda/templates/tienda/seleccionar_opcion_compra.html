@@ -1,0 +1,22 @@
+{% extends 'tienda/base.html' %}
+
+{% block content %}
+    <h2>Seleccionar Opción de Compra</h2>
+    {% if not user.is_authenticated %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="registrarse" class="btn btn-primary">Registrarse</button>
+            <button type="submit" name="comprar_como_invitado" class="btn btn-secondary">Comprar como Invitado</button>
+        </form>
+
+        <h3>Iniciar Sesión</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" name="iniciar_sesion" class="btn btn-primary">Iniciar Sesión</button>
+        </form>
+    {% else %}
+        <p>Ya estás autenticado. Puedes proceder a seleccionar la dirección de envío.</p>
+        <a href="{% url 'tienda:seleccionar_direccion' %}" class="btn btn-primary">Seleccionar Dirección</a>
+    {% endif %}
+{% endblock %}

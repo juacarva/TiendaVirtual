@@ -1,0 +1,51 @@
+{% extends 'tienda/base.html' %}
+
+{% block content %}
+    <h2>Seleccionar Dirección de Envío</h2>
+    {% if user.is_authenticated %}
+        <h3>Direcciones Guardadas</h3>
+        <ul id="direcciones-list">
+            {% for direccion in direcciones %}
+                <li>
+                    <a href="#" class="direccion-item" data-id="{{ direccion.id }}">
+                        {{ direccion.direccion }}, {{ direccion.ciudad }}, {{ direccion.codigo_postal }}, {{ direccion.pais }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        <a href="#" id="nueva-direccion-link">Ingresar nueva dirección</a>
+    {% endif %}
+
+    <form method="post" id="direccion-form" style="display: none;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Guardar Dirección</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const direccionItems = document.querySelectorAll('.direccion-item');
+            const direccionForm = document.getElementById('direccion-form');
+            const nuevaDireccionLink = document.getElementById('nueva-direccion-link');
+
+            direccionItems.forEach(item => {
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const direccionId = this.getAttribute('data-id');
+                    fetch(`/seleccionar_direccion/${direccionId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.href = "{% url 'tienda:resumen_compra' %}";
+                            }
+                        });
+                });
+            });
+
+            nuevaDireccionLink.addEventListener('click', function(event) {
+                event.preventDefault();
+                direccionForm.style.display = 'block';
+            });
+        });
+    </script>
+{% endblock %}

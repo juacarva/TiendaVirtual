@@ -1,0 +1,24 @@
+{% extends 'tienda/base.html' %}
+
+{% block content %}
+    <h2>Carrito de Compras</h2>
+    {% if carrito %}
+        <ul>
+            {% for producto_id, detalles in carrito.items %}
+                <li>
+                    {{ detalles.nombre }} - {{ detalles.cantidad }} x {{ detalles.precio }}
+                    <form method="post" action="{% url 'tienda:eliminar_del_carrito' producto_id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+        <p>Total: {{ total }}</p>
+        <a href="{% url 'tienda:seleccionar_opcion_compra' %}" class="btn btn-primary">Comprar</a>
+    {% else %}
+        <p>El carrito de compras está vacío.</p>
+        <a href="#" class="btn btn-primary disabled" aria-disabled="true">Comprar</a>
+    {% endif %}
+    <a href="{% url 'tienda:lista_productos' %}" class="btn btn-secondary">Seguir Comprando</a>
+{% endblock %}

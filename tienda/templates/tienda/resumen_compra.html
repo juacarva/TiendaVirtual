@@ -1,0 +1,20 @@
+{% extends 'tienda/base.html' %}
+
+{% block content %}
+    <h2>Resumen de Compra</h2>
+
+    <p>Dirección de Envío:</p>
+    <p>{{ direccion_envio.direccion }}, {{ direccion_envio.ciudad }}, {{ direccion_envio.pais }}</p>
+
+    <ul>
+        {% for key, producto in carrito.items %}
+            <li>
+                {{ producto.nombre }} - Precio: {{ producto.precio }} - Cantidad: {{ producto.cantidad }}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <p><strong>Total:</strong> ${{ total }}</p>
+
+    <a href="{% url 'tienda:confirmar_compra' %}" class="btn btn-success">Confirmar Compra</a>
+{% endblock %}

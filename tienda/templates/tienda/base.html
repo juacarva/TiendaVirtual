@@ -1,0 +1,42 @@
+<title>{% block title %}Tienda Virtual{% endblock %}</title>
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                {% if user.is_authenticated %}
+                <li>Bienvenido, {{ user.username }}</li>
+                <li>
+                    <form id="logout-form" action="{% url 'tienda:logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit"
+                            style="background: none; border: none; color: blue; text-decoration: underline; cursor: pointer;">
+                            Cerrar Sesión
+                        </button>
+                    </form>
+                </li>
+                {% else %}
+                <li><a href="{% url 'tienda:login' %}">Iniciar Sesión</a></li>
+                {% endif %}
+            </ul>
+
+            <ul>
+                <li><a href="{% url 'tienda:lista_productos' %}">Inicio</a></li>
+                <li><a href="{% url 'tienda:ver_carrito' %}">Carrito</a></li>
+
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2024 Tienda Virtual. Todos los derechos reservados</p>
+    </footer>
+</body>
+
+</html>

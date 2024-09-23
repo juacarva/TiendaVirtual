@@ -1,0 +1,9 @@
+{% extends 'tienda/base.html' %}
+
+{% block content %}
+    <h2>{{ producto.nombre }}</h2>
+    <p>Precio: ${{ producto.precio }}</p>
+    <p>Descripción: {{ producto.descripcion }}</p>
+
+    <a href="{% url 'tienda:agregar_al_carrito' id=producto.id %}">Agregar al Carrito</a>
+{% endblock %}
