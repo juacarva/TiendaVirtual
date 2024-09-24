@@ -16,7 +16,7 @@
         <a href="#" id="nueva-direccion-link">Ingresar nueva dirección</a>
     {% endif %}
 
-    <form method="post" id="direccion-form" style="display: none;">
+    <form method="post" id="direccion-form" style="{% if user.is_authenticated %}display: none;{% endif %}">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn btn-primary">Guardar Dirección</button>
@@ -32,13 +32,19 @@
                 item.addEventListener('click', function(event) {
                     event.preventDefault();
                     const direccionId = this.getAttribute('data-id');
-                    fetch(`/seleccionar_direccion/${direccionId}/`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                window.location.href = "{% url 'tienda:resumen_compra' %}";
-                            }
-                        });
+                    fetch(`{% url 'tienda:seleccionar_direccion_guardada' direccion_id=0 %}`.replace('0', direccionId), {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = "{% url 'tienda:resumen_compra' %}";
+                        }
+                    });
                 });
             });
 

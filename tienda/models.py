@@ -14,7 +14,7 @@ class Categoria(models.Model):
         return self.nombre
 
     def get_absolute_url(self):
-        return reverse('tienda:lista_productos', args=[self.slug])
+        return reverse('tienda:lista_productos_por_categoria', args=[self.slug])
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
@@ -60,10 +60,7 @@ class OrdenCompra(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2)
 
 class DetalleOrden(models.Model):
-    orden = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE)
+    orden = models.ForeignKey(OrdenCompra, related_name='detalles', on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-
-
-
