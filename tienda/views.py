@@ -10,6 +10,10 @@ from xhtml2pdf import pisa
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 
 def lista_productos(request, categoria_slug=None):
     categoria = None
@@ -150,6 +154,16 @@ def confirmar_compra(request):
     request.session['carrito'] = {}
     
     # Aquí puedes agregar lógica para enviar un correo de confirmación al usuario anónimo
+    # Enviar correo electrónico de confirmación
+    subject = 'Confirmación de tu orden de compra'
+    html_message = render_to_string('tienda/email_orden.html', {'orden': orden})
+    plain_message = strip_tags(html_message)
+    from_email = 'tu_email@gmail.com'
+    to = [usuario.email if usuario else invitado.email]
+    
+    send_mail(subject, plain_message, from_email, to, html_message=html_message)
+
+
     return render(request, 'tienda/confirmacion_compra.html', {'orden': orden})
 
 

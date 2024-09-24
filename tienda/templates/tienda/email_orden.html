@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confirmación de Orden</title>
+</head>
+<body>
+    <h1>Gracias por tu compra, 
+        {% if orden.usuario %}
+            {{ orden.usuario.username }}
+        {% else %}
+            {{ orden.invitado.email }}
+        {% endif %}
+    !</h1>
+    <p>Tu orden N° {{ orden.id }} ha sido confirmada con el siguientes detalles:</p>
+    <ul>
+        {% for detalle in orden.detalleorden_set.all %}
+            <li>{{ detalle.producto.nombre }} - Cantidad: {{ detalle.cantidad }} - Precio: {{ detalle.precio }}</li>
+        {% endfor %}
+    </ul>
+    <p>Total: {{ orden.total }}</p>
+</body>
+</html>

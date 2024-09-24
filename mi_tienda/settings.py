@@ -134,3 +134,12 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 LOGIN_REDIRECT_URL = 'tienda:lista_productos'
 LOGOUT_REDIRECT_URL = 'tienda:lista_productos'
 
+# Configuración de envío de correos
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'circadiano.cl@gmail.com'
+EMAIL_HOST_PASSWORD = 'awdhbdkzpvraicft'
+DEFAULT_FROM_EMAIL = 'circadiano.cl@gmail.com'
+
