@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.http import JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
 
 
 def lista_productos(request, categoria_slug=None):
@@ -19,7 +20,11 @@ def lista_productos(request, categoria_slug=None):
         categoria = get_object_or_404(Categoria, slug=categoria_slug)
         productos = productos.filter(categoria=categoria)
     
-    return render(request, 'tienda/lista_productos.html', {'categoria': categoria, 'categorias': categorias, 'productos': productos})
+    return render(request, 'tienda/lista_productos.html', {
+        'categoria': categoria,
+        'categorias': categorias,
+        'productos': productos
+    })
 
 def detalle_producto(request, id):
     producto = get_object_or_404(Producto, id=id, disponible=True)
@@ -47,65 +52,117 @@ def eliminar_del_carrito(request, id):
     request.session['carrito'] = carrito
     return redirect('tienda:ver_carrito')
 
-
 def seleccionar_direccion(request):
     if request.method == 'POST':
         form = SeleccionarDireccionForm(request.POST, user=request.user)
         if form.is_valid():
             direccion = form.save(commit=False)
-            direccion.usuario = request.user
-            direccion.save()
-            request.session['direccion_envio_id'] = direccion.id
+            if request.user.is_authenticated:
+                direccion.usuario = request.user
+                direccion.save()
+            else:
+                # Guardar datos temporales en la sesión para usuarios anónimos
+                request.session['direccion'] = form.cleaned_data['direccion']
+                request.session['ciudad'] = form.cleaned_data['ciudad']
+                request.session['codigo_postal'] = form.cleaned_data['codigo_postal']
+                request.session['pais'] = form.cleaned_data['pais']
+            request.session['direccion_envio_id'] = direccion.id if request.user.is_authenticated else None
             return redirect('tienda:resumen_compra')
     else:
         form = SeleccionarDireccionForm(user=request.user)
-        direcciones = DireccionEnvio.objects.filter(usuario=request.user)
+        direcciones = DireccionEnvio.objects.filter(usuario=request.user) if request.user.is_authenticated else []
 
-    return render(request, 'tienda/seleccionar_direccion.html', {'form': form, 'direcciones': direcciones})
+    return render(request, 'tienda/seleccionar_direccion.html', {'form': form, 'direcciones': direcciones, 'user_authenticated': request.user.is_authenticated})
 
 def seleccionar_direccion_guardada(request, direccion_id):
-    direccion = get_object_or_404(DireccionEnvio, id=direccion_id, usuario=request.user)
-    request.session['direccion_envio_id'] = direccion.id
-    return JsonResponse({'success': True})
+    if request.user.is_authenticated:
+        direccion = get_object_or_404(DireccionEnvio, id=direccion_id, usuario=request.user)
+        request.session['direccion_envio_id'] = direccion.id
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
 
 def resumen_compra(request):
     carrito = request.session.get('carrito', {})
     direccion_envio_id = request.session.get('direccion_envio_id')
-    direccion_envio = get_object_or_404(DireccionEnvio, id=direccion_envio_id)
+    if request.user.is_authenticated:
+        direccion_envio = get_object_or_404(DireccionEnvio, id=direccion_envio_id)
+    else:
+        direccion_envio = {
+            'direccion': request.session.get('direccion'),
+            'ciudad': request.session.get('ciudad'),
+            'codigo_postal': request.session.get('codigo_postal'),
+            'pais': request.session.get('pais'),
+            'nombre': request.session.get('nombre'),
+            'email': request.session.get('email')
+        }
     total = calcular_total_carrito(carrito)
     return render(request, 'tienda/resumen_compra.html', {'carrito': carrito, 'direccion_envio': direccion_envio, 'total': total})
+
 
 def confirmar_compra(request):
     carrito = request.session.get('carrito', {})
     direccion_envio_id = request.session.get('direccion_envio_id')
-    direccion_envio = get_object_or_404(DireccionEnvio, id=direccion_envio_id)
+    
+    if request.user.is_authenticated:
+        direccion_envio = get_object_or_404(DireccionEnvio, id=direccion_envio_id)
+    else:
+        direccion_data = {
+            'direccion': request.session.get('direccion'),
+            'ciudad': request.session.get('ciudad'),
+            'codigo_postal': request.session.get('codigo_postal'),
+            'pais': request.session.get('pais'),
+        }
+        direccion_envio = DireccionEnvio.objects.create(**direccion_data)
+    
     total = calcular_total_carrito(carrito)
+    
+    if request.user.is_authenticated:
+        usuario = request.user
+        invitado = None
+    else:
+        usuario = None
+        email = request.session.get('email')
+        try:
+            invitado = Invitado.objects.get(email=email)
+        except ObjectDoesNotExist:
+            # Manejar el caso en que el invitado no exista
+            return redirect('tienda:registrar_invitado')  # Redirigir a una vista de registro de invitado
+    
     orden = OrdenCompra.objects.create(
-        usuario=request.user if request.user.is_authenticated else None,
+        usuario=usuario,
+        invitado=invitado,
         direccion_envio=direccion_envio,
         fecha_compra=timezone.now(),
         total=total
     )
-    for key, item in carrito.items():
+    
+    # Crear los detalles de la orden
+    for item_id, item in carrito.items():
+        producto = get_object_or_404(Producto, id=item_id)
         DetalleOrden.objects.create(
             orden=orden,
-            producto_id=key,
+            producto=producto,
             cantidad=item['cantidad'],
             precio=item['precio']
         )
-    del request.session['carrito']
-    del request.session['direccion_envio_id']
-    return redirect('tienda:confirmacion_compra', orden_id=orden.id)
+    
+    # Limpiar el carrito después de la compra
+    request.session['carrito'] = {}
+    
+    # Aquí puedes agregar lógica para enviar un correo de confirmación al usuario anónimo
+    return render(request, 'tienda/confirmacion_compra.html', {'orden': orden})
+
 
 def calcular_total_carrito(carrito):
     return sum(float(item['precio']) * item['cantidad'] for item in carrito.values())
+
 
 def registrar_invitado(request):
     if request.method == 'POST':
         form = InvitadoForm(request.POST)
         if form.is_valid():
             invitado = form.save()
-            request.session['invitado_id'] = invitado.id
+            request.session['email'] = invitado.email
             return redirect('tienda:seleccionar_direccion')
     else:
         form = InvitadoForm()
@@ -142,13 +199,18 @@ def descargar_orden(request, orden_id):
     orden = get_object_or_404(OrdenCompra, id=orden_id)
     template_path = 'tienda/orden_pdf.html'
     context = {'orden': orden}
+    
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="orden_{orden.id}.pdf"'
+    
     template = get_template(template_path)
     html = template.render(context)
+    
     pisa_status = pisa.CreatePDF(html, dest=response)
+    
     if pisa_status.err:
-        return HttpResponse('Error al generar el PDF', status=400)
+        return HttpResponse('Error al generar el PDF: %s' % pisa_status.err, status=400)
+    
     return response
 
 def confirmacion_compra(request, orden_id):
