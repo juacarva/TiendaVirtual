@@ -2,22 +2,65 @@
 <html>
 <head>
     <title>Orden de Compra</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .header, .footer {
+            text-align: center;
+            margin: 20px;
+        }
+        .details {
+            margin: 20px;
+        }
+        .details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details table, .details th, .details td {
+            border: 1px solid black;
+        }
+        .details th, .details td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
-    <h1>Orden de Compra</h1>
-    <p>Orden ID: {{ orden.id }}</p>
-    <p>Fecha: {{ orden.fecha_compra }}</p>
-    <p>Total: {{ orden.total }}</p>
-    <h2>Dirección de Envío</h2>
-    <p>{{ orden.direccion_envio.direccion }}</p>
-    <p>{{ orden.direccion_envio.ciudad }}</p>
-    <p>{{ orden.direccion_envio.codigo_postal }}</p>
-    <p>{{ orden.direccion_envio.pais }}</p>
-    <h2>Detalles de la Orden</h2>
-    <ul>
-        {% for detalle in orden.detalleorden_set.all %}
-            <li>{{ detalle.producto.nombre }} - {{ detalle.cantidad }} x {{ detalle.precio }}</li>
-        {% endfor %}
-    </ul>
+    <div class="header">
+        <h1>Orden de Compra</h1>
+        <p>Orden ID: {{ orden.id }}</p>
+        <p>Fecha: {{ orden.fecha_compra }}</p>
+        <p>Total: {{ orden.total }}</p>
+    </div>
+    <div class="details">
+        <h2>Dirección de Envío</h2>
+        <p>{{ orden.direccion_envio.direccion }}</p>
+        <p>{{ orden.direccion_envio.ciudad }}</p>
+        <p>{{ orden.direccion_envio.codigo_postal }}</p>
+        <p>{{ orden.direccion_envio.pais }}</p>
+        <h2>Detalles de la Orden</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in orden.detalles.all %}
+                <tr>
+                    <td>{{ detalle.producto.nombre }}</td>
+                    <td>{{ detalle.cantidad }}</td>
+                    <td>{{ detalle.precio }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 Tienda Virtual. Todos los derechos reservados</p>
+    </div>
 </body>
 </html>

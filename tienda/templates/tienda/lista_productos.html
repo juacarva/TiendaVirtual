@@ -1,13 +1,14 @@
 {% extends 'tienda/base.html' %}
 
 {% block content %}
-    <h1>Productos</h1>
-    <ul>
+<h1>{% if categoria %}{{ categoria.nombre }}{% else %}Todos los Productos{% endif %}</h1>
+<ul>
     {% for producto in productos %}
-        <li>
-            <a href="{% url 'tienda:detalle_producto' id=producto.id %}">{{ producto.nombre }}</a>
-            <p>{{ producto.precio }} USD</p>
-        </li>
+    <li>
+        <a href="{% url 'tienda:detalle_producto' producto.id %}">
+            {{ producto.nombre }} - {{ producto.precio }}
+        </a>
+    </li>
     {% endfor %}
-    </ul>
+</ul>
 {% endblock %}
