@@ -41,6 +41,12 @@
         </nav>
     </header>
     <main>
+        {% if messages %}
+                {% for message in messages %}
+                    <p{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</p>
+                {% endfor %}
+        {% endif %}
+
         {% block content %}
         {% endblock %}
     </main>

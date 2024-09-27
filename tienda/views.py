@@ -4,6 +4,7 @@ from .forms import SeleccionarDireccionForm, InvitadoForm, CustomUserCreationFor
 from django.utils import timezone
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login
+from django.contrib import messages
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
@@ -13,7 +14,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-
 
 
 def lista_productos(request, categoria_slug=None):
@@ -42,11 +42,21 @@ def agregar_al_carrito(request, id):
     cantidad = int(request.POST.get('cantidad', 1))
     
     if str(id) in carrito:
-        carrito[str(id)]['cantidad'] += cantidad
+        nueva_cantidad = carrito[str(id)]['cantidad'] + cantidad
+    else:
+        nueva_cantidad = cantidad
+    
+    if nueva_cantidad > producto.stock:
+        lmessages.error(request, f"No puedes agregar al carro de compras más de {producto.stock} unidades en total del producto {producto.nombre}.")
+        return redirect('tienda:detalle_producto', id=id)
+    
+    if str(id) in carrito:
+        carrito[str(id)]['cantidad'] = nueva_cantidad
     else:
         carrito[str(id)] = {'nombre': producto.nombre, 'precio': str(producto.precio), 'cantidad': cantidad}
     
     request.session['carrito'] = carrito
+    messages.success(request, f"{producto.nombre} ha sido agregado al carrito.")
     return redirect('tienda:ver_carrito')
 
 def ver_carrito(request):
@@ -147,12 +157,16 @@ def confirmar_compra(request):
     
     for item_id, item in carrito.items():
         producto = get_object_or_404(Producto, id=item_id)
+        cantidad = int(item['cantidad'])
         DetalleOrden.objects.create(
             orden=orden,
             producto=producto,
-            cantidad=int(item['cantidad']),
+            cantidad=cantidad,
             precio=float(item['precio'])
         )
+        # Actualizar el stock del producto
+        producto.stock -= cantidad
+        producto.save()
     
     request.session['carrito'] = {}
     
