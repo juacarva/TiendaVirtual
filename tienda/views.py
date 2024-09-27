@@ -35,13 +35,17 @@ def detalle_producto(request, id):
     producto = get_object_or_404(Producto, id=id, disponible=True)
     return render(request, 'tienda/detalle_producto.html', {'producto': producto})
 
+
 def agregar_al_carrito(request, id):
     producto = get_object_or_404(Producto, id=id)
     carrito = request.session.get('carrito', {})
+    cantidad = int(request.POST.get('cantidad', 1))
+    
     if str(id) in carrito:
-        carrito[str(id)]['cantidad'] += 1
+        carrito[str(id)]['cantidad'] += cantidad
     else:
-        carrito[str(id)] = {'nombre': producto.nombre, 'precio': str(producto.precio), 'cantidad': 1}
+        carrito[str(id)] = {'nombre': producto.nombre, 'precio': str(producto.precio), 'cantidad': cantidad}
+    
     request.session['carrito'] = carrito
     return redirect('tienda:ver_carrito')
 
