@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Producto, Categoria, OrdenCompra, DetalleOrden, DireccionEnvio, Invitado
-from .forms import SeleccionarDireccionForm, InvitadoForm
+from .forms import SeleccionarDireccionForm, InvitadoForm, CustomUserCreationForm
 from django.utils import timezone
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login
@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+
 
 
 def lista_productos(request, categoria_slug=None):
@@ -103,6 +104,7 @@ def resumen_compra(request):
     return render(request, 'tienda/resumen_compra.html', {'carrito': carrito, 'direccion_envio': direccion_envio, 'total': total})
 
 
+
 def confirmar_compra(request):
     carrito = request.session.get('carrito', {})
     direccion_envio_id = request.session.get('direccion_envio_id')
@@ -118,7 +120,7 @@ def confirmar_compra(request):
         }
         direccion_envio = DireccionEnvio.objects.create(**direccion_data)
     
-    total = calcular_total_carrito(carrito)
+    total = sum(int(item['cantidad']) * float(item['precio']) for item in carrito.values())
     
     if request.user.is_authenticated:
         usuario = request.user
@@ -128,9 +130,8 @@ def confirmar_compra(request):
         email = request.session.get('email')
         try:
             invitado = Invitado.objects.get(email=email)
-        except ObjectDoesNotExist:
-            # Manejar el caso en que el invitado no exista
-            return redirect('tienda:registrar_invitado')  # Redirigir a una vista de registro de invitado
+        except Invitado.DoesNotExist:
+            return redirect('tienda:registrar_invitado')
     
     orden = OrdenCompra.objects.create(
         usuario=usuario,
@@ -140,20 +141,17 @@ def confirmar_compra(request):
         total=total
     )
     
-    # Crear los detalles de la orden
     for item_id, item in carrito.items():
         producto = get_object_or_404(Producto, id=item_id)
         DetalleOrden.objects.create(
             orden=orden,
             producto=producto,
-            cantidad=item['cantidad'],
-            precio=item['precio']
+            cantidad=int(item['cantidad']),
+            precio=float(item['precio'])
         )
     
-    # Limpiar el carrito después de la compra
     request.session['carrito'] = {}
     
-    # Aquí puedes agregar lógica para enviar un correo de confirmación al usuario anónimo
     # Enviar correo electrónico de confirmación
     subject = 'Confirmación de tu orden de compra'
     html_message = render_to_string('tienda/email_orden.html', {'orden': orden})
@@ -162,8 +160,7 @@ def confirmar_compra(request):
     to = [usuario.email if usuario else invitado.email]
     
     send_mail(subject, plain_message, from_email, to, html_message=html_message)
-
-
+    
     return render(request, 'tienda/confirmacion_compra.html', {'orden': orden})
 
 
@@ -198,15 +195,16 @@ def seleccionar_opcion_compra(request):
         form = AuthenticationForm()
     return render(request, 'tienda/seleccionar_opcion_compra.html', {'form': form})
 
+
 def registrar_usuario(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('tienda:seleccionar_direccion')
+            return redirect('tienda:lista_productos')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
     return render(request, 'tienda/registrar_usuario.html', {'form': form})
 
 def descargar_orden(request, orden_id):
